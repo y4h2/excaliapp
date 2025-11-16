@@ -24,6 +24,17 @@ func NewApp() *App {
 	return &App{}
 }
 
+// getMenu creates and returns the application menu
+// This is called during app startup, so it must not depend on ctx being set
+func (a *App) getMenu() *menu.Menu {
+	// Create a temporary menu manager just for menu creation
+	// The real menu manager will be created during startup with the proper context
+	mm := &MenuManager{
+		app: a,
+	}
+	return mm.createMainMenu()
+}
+
 // startup is called when the app starts. The context is saved
 // so we can call the runtime methods
 func (a *App) startup(ctx context.Context) {
@@ -41,6 +52,9 @@ func (a *App) startup(ctx context.Context) {
 		}
 	}
 	a.appState = appState
+
+	// Initialize menu manager with context for runtime calls
+	a.menuManager = NewMenuManager(ctx, a)
 
 	// Initialize file manager
 	a.fileManager = NewFileManager()
@@ -282,8 +296,7 @@ func (a *App) GetFileName() string {
 
 // domReady is called after the frontend has been loaded
 func (a *App) domReady(ctx context.Context) {
-	// Create menu manager after app is fully initialized
-	a.menuManager = NewMenuManager(ctx, a)
+	// Menu manager is now created in startup and getMenu creates it during app creation
 }
 
 // beforeClose is called when the application is about to close
@@ -308,10 +321,3 @@ func (a *App) shutdown(ctx context.Context) {
 	// Perform cleanup
 }
 
-// getMenu returns the application menu
-func (a *App) getMenu() *menu.Menu {
-	if a.menuManager != nil {
-		return a.menuManager.GetMainMenu()
-	}
-	return nil
-}
