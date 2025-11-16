@@ -108,11 +108,24 @@
 .excalidraw-container {
   height: 100%;
   width: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
 }
 
 .excalidraw-wrapper {
   height: 100vh;
   position: relative;
+}
+
+.canvas-container {
+  flex: 1;
+  position: relative;
+  background: #ffffff;
+  min-height: 0; /* Important for flex containers with scrolling children */
+  height: 100%;
 }
 
 /* Sidebar styles */

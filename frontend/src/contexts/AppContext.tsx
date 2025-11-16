@@ -107,32 +107,79 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [state, dispatch] = useReducer(appReducer, initialState)
 
   // Try calling Go function with retry
-  const tryCallWithRetry = async <T,>(fn: () => Promise<T>, retries = 10, delay = 200): Promise<T> => {
+  const tryCallWithRetry = async <T,>(fn: () => Promise<T>, retries = 20, delay = 300): Promise<T> => {
     let lastError: any
     for (let i = 0; i < retries; i++) {
       try {
-        return await fn()
+        const result = await fn()
+        if (i > 0) {
+          console.log(`Go function succeeded after ${i} retries`)
+        }
+        return result
       } catch (error) {
         lastError = error
-        // If it's a runtime error (can't read property of undefined), retry
-        if (i < retries - 1 && String(error).includes('Cannot read')) {
+        const errorStr = String(error)
+
+        // If it's a runtime initialization error, retry
+        if (i < retries - 1 && (
+          errorStr.includes('Cannot read') ||
+          errorStr.includes('undefined') ||
+          errorStr.includes('null')
+        )) {
+          console.log(`Wails runtime not ready, retry ${i + 1}/${retries}...`)
           await new Promise(resolve => setTimeout(resolve, delay))
         } else {
           throw error
         }
       }
     }
-    throw lastError
+    throw new Error(`Wails runtime not available after ${retries} retries. Last error: ${String(lastError)}`)
   }
 
   // Load initial data
   useEffect(() => {
     const loadInitialData = async () => {
+      const w = window as any
+
+      // Check if we're in Wails environment
+      console.log('Window location:', window.location.href)
+      console.log('__WAILS_BRIDGE__:', typeof w.__WAILS_BRIDGE__)
+      console.log('window.go:', typeof w.go)
+      console.log('window.go?.main:', typeof w.go?.main)
+
+      // Check if running in Wails vs standalone Vite dev server
+      const isWailsRuntime = typeof w.__WAILS_BRIDGE__ !== 'undefined' || typeof w.go?.main !== 'undefined'
+
+      if (!isWailsRuntime) {
+        console.error('❌ WAILS RUNTIME NOT DETECTED')
+        console.error('This app must be run through Wails, not the Vite dev server directly.')
+        console.error('')
+        console.error('To fix this:')
+        console.error('  1. Stop the current server (Ctrl+C)')
+        console.error('  2. Run: wails dev')
+        console.error('')
+        console.error('For more info, see: https://wails.io/docs/gettingstarted/installation')
+
+        dispatch({
+          type: 'SET_ERROR',
+          payload: 'Wails runtime not detected. Please run "wails dev" instead of "npm run dev"'
+        })
+        dispatch({ type: 'SET_LOADING', payload: false })
+        return
+      }
+
       try {
         dispatch({ type: 'SET_LOADING', payload: true })
 
+        // Initial delay to allow Wails runtime to fully initialize
+        // This is especially important in dev mode
+        await new Promise(resolve => setTimeout(resolve, 500))
+
+        console.log('Attempting to load app state...')
+
         // Load app state with retry
         const appState = await tryCallWithRetry(() => GetAppState())
+        console.log('App state loaded:', appState)
         dispatch({ type: 'SET_APP_STATE', payload: appState })
 
         // Load files
