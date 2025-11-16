@@ -66,9 +66,9 @@ func (fm *FileManager) scanDirectory() error {
 		}
 	}
 
-	// Sort files by modified time (newest first)
+	// Sort files by name for stable ordering
 	sort.Slice(fm.files, func(i, j int) bool {
-		return fm.files[i].Modified.After(fm.files[j].Modified)
+		return strings.ToLower(fm.files[i].Name) < strings.ToLower(fm.files[j].Name)
 	})
 
 	if fm.onFilesChanged != nil {
@@ -128,11 +128,6 @@ func (fm *FileManager) SaveFile(path string, content string) error {
 			break
 		}
 	}
-
-	// Re-sort files
-	sort.Slice(fm.files, func(i, j int) bool {
-		return fm.files[i].Modified.After(fm.files[j].Modified)
-	})
 
 	if fm.onFilesChanged != nil {
 		fm.onFilesChanged(fm.files)
