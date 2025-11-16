@@ -106,29 +106,48 @@ const AppContext = createContext<AppContextType | undefined>(undefined)
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [state, dispatch] = useReducer(appReducer, initialState)
 
+  // Try calling Go function with retry
+  const tryCallWithRetry = async <T,>(fn: () => Promise<T>, retries = 10, delay = 200): Promise<T> => {
+    let lastError: any
+    for (let i = 0; i < retries; i++) {
+      try {
+        return await fn()
+      } catch (error) {
+        lastError = error
+        // If it's a runtime error (can't read property of undefined), retry
+        if (i < retries - 1 && String(error).includes('Cannot read')) {
+          await new Promise(resolve => setTimeout(resolve, delay))
+        } else {
+          throw error
+        }
+      }
+    }
+    throw lastError
+  }
+
   // Load initial data
   useEffect(() => {
     const loadInitialData = async () => {
       try {
         dispatch({ type: 'SET_LOADING', payload: true })
 
-        // Load app state
-        const appState = await GetAppState()
+        // Load app state with retry
+        const appState = await tryCallWithRetry(() => GetAppState())
         dispatch({ type: 'SET_APP_STATE', payload: appState })
 
         // Load files
         await loadFiles()
 
         // Load current file if any
-        const currentFile = await GetCurrentFile()
+        const currentFile = await tryCallWithRetry(() => GetCurrentFile())
         if (currentFile) {
-          const content = await GetFileContent()
+          const content = await tryCallWithRetry(() => GetFileContent())
           dispatch({ type: 'SET_CURRENT_FILE', payload: currentFile })
           dispatch({ type: 'SET_CURRENT_CONTENT', payload: content })
         }
 
         // Check if dirty
-        const isDirty = await IsDirty()
+        const isDirty = await tryCallWithRetry(() => IsDirty())
         dispatch({ type: 'SET_DIRTY', payload: isDirty })
 
       } catch (error) {
@@ -148,52 +167,47 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       dispatch({ type: 'SET_FILES', payload: files })
     }
 
-    // Check if runtime bridge exists
-    const isRuntimeReady = () => {
-      try {
-        return typeof (window as any).__WAILS_BRIDGE__ !== 'undefined' &&
-               (window as any).__WAILS_BRIDGE__ !== null
-      } catch {
-        return false
-      }
-    }
+    let isListenerSetup = false
 
-    // Wait for runtime to be ready with retry
+    // Setup event listener with retry
     const setupEventListenerWithRetry = async (retries = 5) => {
+      let lastError: any
       for (let i = 0; i < retries; i++) {
         try {
-          if (isRuntimeReady()) {
-            EventsOn("files:changed", handleFilesChanged)
-            return true
-          }
+          EventsOn("files:changed", handleFilesChanged)
+          isListenerSetup = true
+          return true
         } catch (error) {
-          // Runtime not ready yet, continue retrying
-        }
-
-        if (i < retries - 1) {
-          await new Promise(resolve => setTimeout(resolve, 200))
+          lastError = error
+          if (i < retries - 1 && String(error).includes('Cannot read')) {
+            await new Promise(resolve => setTimeout(resolve, 200))
+          } else if (i < retries - 1) {
+            await new Promise(resolve => setTimeout(resolve, 200))
+          } else {
+            console.warn('Failed to setup file change event listener:', lastError)
+            return false
+          }
         }
       }
-      console.warn('Failed to setup file change event listener after retries')
       return false
     }
 
     setupEventListenerWithRetry()
 
     return () => {
-      try {
-        if (isRuntimeReady()) {
+      if (isListenerSetup) {
+        try {
           EventsOff("files:changed")
+        } catch (error) {
+          console.warn('Failed to cleanup event listener:', error)
         }
-      } catch (error) {
-        console.warn('Failed to cleanup event listener:', error)
       }
     }
   }, [])
 
   const loadFiles = async () => {
     try {
-      const files = await GetFiles()
+      const files = await tryCallWithRetry(() => GetFiles())
       dispatch({ type: 'SET_FILES', payload: files })
     } catch (error) {
       console.error('Failed to load files:', error)
@@ -324,21 +338,3 @@ export const useApp = () => {
 }
 
 export default AppContext
-
-// Export the Go bindings for direct use
-export {
-  GetFiles,
-  GetCurrentDirectory,
-  GetCurrentFile,
-  GetFileContent,
-  IsDirty,
-  GetAppState,
-  LoadFile,
-  SaveFile,
-  OpenDirectoryDialog,
-  NewFileDialog,
-  SaveCurrentFile,
-  CloseCurrentFile,
-  UpdateFileContent,
-  GetFileName
-} from '../lib/wails-stubs'

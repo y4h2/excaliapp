@@ -11,10 +11,25 @@ interface CanvasProps {
 const Canvas: React.FC<CanvasProps> = ({ content, onChange, isReadOnly = false }) => {
   const [isLoading, setIsLoading] = useState(true)
   const contentRef = useRef(content)
+  const [initialElements, setInitialElements] = useState([])
 
   // Update content ref when content prop changes
   useEffect(() => {
     contentRef.current = content
+  }, [content])
+
+  // Parse initial data from content
+  useEffect(() => {
+    try {
+      if (content) {
+        const data = JSON.parse(content)
+        if (data.elements) {
+          setInitialElements(data.elements)
+        }
+      }
+    } catch (error) {
+      console.error('Failed to parse content:', error)
+    }
   }, [content])
 
   // Initialize loading state
@@ -85,6 +100,7 @@ const Canvas: React.FC<CanvasProps> = ({ content, onChange, isReadOnly = false }
           }
         }}
         initialData={{
+          elements: initialElements,
           appState: {
             viewBackgroundColor: document.documentElement.classList.contains('dark') ? '#1e1e1e' : '#ffffff',
             theme: document.documentElement.classList.contains('dark') ? 'dark' : 'light'
