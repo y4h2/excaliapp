@@ -155,7 +155,7 @@ func (a *App) LoadFile(path string) (string, error) {
 
 	a.currentFile = path
 	a.autoSave.SetCurrentFile(path)
-	a.autoSave.SetContent(content)
+	a.autoSave.SetInitialContent(content)
 
 	return content, nil
 }
@@ -259,12 +259,18 @@ func (a *App) Exit() {
 
 // UpdateFileContent updates the current file content (triggered by frontend)
 func (a *App) UpdateFileContent(content string) {
-	a.autoSave.SetContent(content)
-	a.autoSave.TriggerAutoSave()
+	// Check if content actually changed before marking dirty
+	currentContent := a.autoSave.GetCurrentContent()
 
-	// Update file changed status
-	if a.currentFile != "" {
-		a.fileManager.SetFileChanged(a.currentFile, a.autoSave.IsDirty())
+	// Only process if content actually changed
+	if currentContent != content {
+		a.autoSave.SetContent(content)
+		a.autoSave.TriggerAutoSave()
+
+		// Update file changed status
+		if a.currentFile != "" {
+			a.fileManager.SetFileChanged(a.currentFile, a.autoSave.IsDirty())
+		}
 	}
 }
 

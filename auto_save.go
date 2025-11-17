@@ -14,6 +14,7 @@ type AutoSaveManager struct {
 	isDirty      bool
 	debounceFunc func(func())
 	mu           sync.Mutex
+	isInitialLoad bool
 }
 
 func NewAutoSaveManager(fileManager *FileManager) *AutoSaveManager {
@@ -34,14 +35,31 @@ func (asm *AutoSaveManager) SetCurrentFile(filePath string) {
 	asm.currentFile = filePath
 	asm.currentContent = ""
 	asm.isDirty = false
+	asm.isInitialLoad = true
+}
+
+// SetInitialContent sets the initial content without marking as dirty
+func (asm *AutoSaveManager) SetInitialContent(content string) {
+	asm.mu.Lock()
+	defer asm.mu.Unlock()
+
+	asm.currentContent = content
+	asm.isDirty = false
 }
 
 func (asm *AutoSaveManager) SetContent(content string) {
 	asm.mu.Lock()
 	defer asm.mu.Unlock()
 
-	asm.currentContent = content
-	asm.isDirty = true
+	// During initial load, just update content but don't mark as dirty
+	if asm.isInitialLoad {
+		asm.currentContent = content
+		asm.isInitialLoad = false
+	} else if asm.currentContent != content {
+		// Only mark as dirty if content actually changed after initial load
+		asm.currentContent = content
+		asm.isDirty = true
+	}
 }
 
 func (asm *AutoSaveManager) SaveNow() error {
@@ -68,6 +86,13 @@ func (asm *AutoSaveManager) TriggerAutoSave() {
 	asm.debounceFunc(func() {
 		asm.SaveNow()
 	})
+}
+
+// GetCurrentContent returns the current content without modifying dirty state
+func (asm *AutoSaveManager) GetCurrentContent() string {
+	asm.mu.Lock()
+	defer asm.mu.Unlock()
+	return asm.currentContent
 }
 
 func (asm *AutoSaveManager) IsDirty() bool {
