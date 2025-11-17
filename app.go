@@ -11,12 +11,13 @@ import (
 
 // App struct
 type App struct {
-	ctx          context.Context
-	fileManager  *FileManager
-	autoSave     *AutoSaveManager
-	menuManager  *MenuManager
-	appState     *AppState
-	currentFile  string
+	ctx             context.Context
+	fileManager     *FileManager
+	autoSave        *AutoSaveManager
+	menuManager     *MenuManager
+	appState        *AppState
+	currentFile     string
+	recoveryManager *RecoveryManager
 }
 
 // NewApp creates a new App application struct
@@ -65,6 +66,14 @@ func (a *App) startup(ctx context.Context) {
 
 	// Initialize auto-save manager
 	a.autoSave = NewAutoSaveManager(a.fileManager)
+
+	// Initialize recovery manager
+	recoveryManager, err := NewRecoveryManager()
+	if err != nil {
+		runtime.LogError(a.ctx, fmt.Sprintf("Failed to initialize recovery manager: %v", err))
+	} else {
+		a.recoveryManager = recoveryManager
+	}
 
 	// Set up app focus/blur handlers
 	runtime.EventsOn(a.ctx, "app:focus", func(optionalData ...any) {
@@ -345,6 +354,38 @@ func (a *App) UpdateTheme(theme string) error {
 		return fmt.Errorf("failed to save theme preference: %w", err)
 	}
 	return nil
+}
+
+// CheckRecoveryFiles checks for available recovery files
+func (a *App) CheckRecoveryFiles() ([]RecoveryInfo, error) {
+	if a.recoveryManager == nil {
+		return []RecoveryInfo{}, nil
+	}
+	return a.recoveryManager.CheckRecoveryFiles()
+}
+
+// RecoverFromBackup recovers content from a backup file
+func (a *App) RecoverFromBackup(backupPath string) (string, error) {
+	if a.recoveryManager == nil {
+		return "", fmt.Errorf("recovery manager not initialized")
+	}
+	return a.recoveryManager.RecoverFile(backupPath)
+}
+
+// DiscardBackup removes a backup file
+func (a *App) DiscardBackup(backupPath string) error {
+	if a.recoveryManager == nil {
+		return fmt.Errorf("recovery manager not initialized")
+	}
+	return a.recoveryManager.CleanupBackup(backupPath)
+}
+
+// SaveBackup saves current content to backup file
+func (a *App) SaveBackup(content string) error {
+	if a.recoveryManager == nil || a.currentFile == "" {
+		return nil
+	}
+	return a.recoveryManager.SaveBackup(a.currentFile, content)
 }
 
 // domReady is called after the frontend has been loaded

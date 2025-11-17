@@ -126,24 +126,46 @@ Based on PRD analysis (specs/0001-spec.md) - Last updated: 2025-11-16
 
 ## LOW Priority - Nice-to-Have
 
-### 5. ❌ Crash Recovery with Temp Backups
-**Status:** Not implemented
-**Location:** `auto_save.go`, `frontend/src/contexts/AppContext.tsx`
-**PRD Reference:** Section 5.2 - Stability Requirements
-**Current State:** Auto-save on blur/switch reduces risk
+### 5. ✅ Crash Recovery with Temp Backups
+**Status:** Implemented
+**Location:** `recovery.go`, `app.go`, `frontend/src/components/RecoveryDialog.tsx`, `frontend/src/App.tsx`
 
-**Missing:**
-- Temporary backup files during editing
+**Implemented Features:**
+- Automatic backup file creation every 30 seconds while editing
 - Recovery check on app startup
-- User prompt to restore unsaved content
+- Recovery dialog showing available backups
+- Individual file recovery or discard options
+- Backup metadata with timestamps
 
-**Implementation:**
-- Save temp backup every N seconds while editing
-- On startup, check for temp files newer than last saved version
-- Prompt user with recovery option if found
-- Clean up temp files after successful recovery
+**Implementation Details:**
 
-**Priority:** LOW (auto-save already covers most cases)
+**Backend (recovery.go):**
+- `RecoveryManager` struct for managing backups
+- Backup files stored in `~/.config/excaliapp/backups/`
+- Metadata files (`.backup.meta`) track original file path and timestamp
+- `SaveBackup()`: Creates backup with metadata
+- `CheckRecoveryFiles()`: Finds backups newer than originals
+- `RecoverFile()`: Returns backup content
+- `CleanupBackup()`: Removes backup and metadata
+
+**Frontend (App.tsx):**
+- Startup check for recovery files (lines 74-89)
+- Periodic backup every 30 seconds when file is dirty (lines 91-114)
+- Recovery dialog integration
+- Recover and discard handlers
+
+**Recovery Dialog:**
+- Shows file name, backup time, and last saved time
+- Individual "Recover" and "Discard" buttons per file
+- Automatically closes when all backups processed
+- Warning icon and clear messaging
+
+**Backup Trigger:**
+- Runs every 30 seconds while file is open and has unsaved changes
+- Stops when file is closed or saved
+- Cleans up interval on component unmount
+
+**Priority:** LOW (auto-save already covers most cases) ✅ COMPLETED
 
 ---
 

@@ -1,14 +1,15 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { AppProvider, useApp } from './contexts/AppContext'
 import Sidebar from './components/Sidebar'
 import Canvas from './components/Canvas'
 import StatusBar from './components/StatusBar'
 import MainHeader from './components/MainHeader'
 import KeyboardShortcutsHelp from './components/KeyboardShortcutsHelp'
+import RecoveryDialog from './components/RecoveryDialog'
 import ThemeToggle, { Theme } from './components/ThemeToggle'
 import { NoDirectoryEmptyState, NoFilesEmptyState, NoFileSelectedEmptyState } from './components/EmptyState'
 import { setDocumentTheme, getSystemTheme } from './lib/utils'
-import { UpdateSidebarWidth, UpdateSidebarCollapsed, UpdateTheme } from '../wailsjs/go/main/App'
+import { UpdateSidebarWidth, UpdateSidebarCollapsed, UpdateTheme, CheckRecoveryFiles, RecoverFromBackup, DiscardBackup, SaveBackup } from '../wailsjs/go/main/App'
 import './styles/globals.css'
 
 function AppContent() {
@@ -33,6 +34,9 @@ function AppContent() {
   const [sidebarWidth, setSidebarWidth] = useState(300)
   const [showKeyboardHelp, setShowKeyboardHelp] = useState(false)
   const [theme, setTheme] = useState<Theme>('system')
+  const [recoveryFiles, setRecoveryFiles] = useState<any[]>([])
+  const [showRecoveryDialog, setShowRecoveryDialog] = useState(false)
+  const backupIntervalRef = useRef<NodeJS.Timeout | null>(null)
 
   // Handle theme changes (manual or system)
   useEffect(() => {
@@ -66,6 +70,48 @@ function AppContent() {
       }
     }
   }, [appState])
+
+  // Check for recovery files on startup
+  useEffect(() => {
+    const checkRecovery = async () => {
+      try {
+        const files = await CheckRecoveryFiles()
+        if (files && files.length > 0) {
+          setRecoveryFiles(files)
+          setShowRecoveryDialog(true)
+        }
+      } catch (error) {
+        console.error('Failed to check recovery files:', error)
+      }
+    }
+
+    checkRecovery()
+  }, [])
+
+  // Periodic backup save (every 30 seconds when file is open and dirty)
+  useEffect(() => {
+    if (currentFile && isDirty && currentContent) {
+      // Clear existing interval
+      if (backupIntervalRef.current) {
+        clearInterval(backupIntervalRef.current)
+      }
+
+      // Set new interval
+      backupIntervalRef.current = setInterval(async () => {
+        try {
+          await SaveBackup(currentContent)
+        } catch (error) {
+          console.error('Failed to save backup:', error)
+        }
+      }, 30000) // 30 seconds
+
+      return () => {
+        if (backupIntervalRef.current) {
+          clearInterval(backupIntervalRef.current)
+        }
+      }
+    }
+  }, [currentFile, isDirty, currentContent])
 
   // Callback functions
   const handleSidebarToggle = useCallback(async () => {
@@ -161,6 +207,43 @@ function AppContent() {
     }
   }, [])
 
+  const handleRecover = useCallback(async (backupPath: string, filePath: string) => {
+    try {
+      // Recover content from backup
+      const content = await RecoverFromBackup(backupPath)
+
+      // Load the file and set recovered content
+      await loadFile(filePath)
+      updateContent(content)
+
+      // Remove this recovery file from the list
+      setRecoveryFiles(prev => prev.filter(f => f.backupPath !== backupPath))
+
+      // Close dialog if no more files
+      if (recoveryFiles.length <= 1) {
+        setShowRecoveryDialog(false)
+      }
+    } catch (error) {
+      console.error('Failed to recover file:', error)
+    }
+  }, [loadFile, updateContent, recoveryFiles.length])
+
+  const handleDiscardBackup = useCallback(async (backupPath: string) => {
+    try {
+      await DiscardBackup(backupPath)
+
+      // Remove from list
+      setRecoveryFiles(prev => prev.filter(f => f.backupPath !== backupPath))
+
+      // Close dialog if no more files
+      if (recoveryFiles.length <= 1) {
+        setShowRecoveryDialog(false)
+      }
+    } catch (error) {
+      console.error('Failed to discard backup:', error)
+    }
+  }, [recoveryFiles.length])
+
   const handleCanvasChange = useCallback((content: string) => {
     updateContent(content)
   }, [updateContent])
@@ -252,6 +335,15 @@ function AppContent() {
         isOpen={showKeyboardHelp}
         onClose={() => setShowKeyboardHelp(false)}
       />
+
+      {showRecoveryDialog && (
+        <RecoveryDialog
+          recoveryFiles={recoveryFiles}
+          onRecover={handleRecover}
+          onDiscard={handleDiscardBackup}
+          onClose={() => setShowRecoveryDialog(false)}
+        />
+      )}
     </div>
   )
 }
