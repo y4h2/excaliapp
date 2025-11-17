@@ -5,6 +5,7 @@
 ## 简介
 
 ExcaliApp 是一个专为管理和编辑 `.excalidraw` 文件而设计的桌面应用程序。它提供了直观的双面板界面：左侧是文件管理侧边栏，右侧是完整功能的 Excalidraw 绘图画布。
+![App UI](image.png)
 
 ## 主要特性
 
