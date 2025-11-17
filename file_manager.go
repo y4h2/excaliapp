@@ -8,6 +8,8 @@ import (
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/fsnotify/fsnotify"
 )
 
 type ExcalidrawFile struct {
@@ -22,6 +24,7 @@ type FileManager struct {
 	currentDirectory string
 	files            []ExcalidrawFile
 	onFilesChanged   func([]ExcalidrawFile)
+	watcher          *fsnotify.Watcher
 }
 
 func NewFileManager() *FileManager {
@@ -35,8 +38,18 @@ func (fm *FileManager) SetDirectory(directory string) error {
 		return fmt.Errorf("directory does not exist: %w", err)
 	}
 
+	// Stop watching previous directory
+	fm.StopWatching()
+
 	fm.currentDirectory = directory
-	return fm.scanDirectory()
+
+	// Scan the directory first
+	if err := fm.scanDirectory(); err != nil {
+		return err
+	}
+
+	// Start watching the new directory
+	return fm.StartWatching()
 }
 
 func (fm *FileManager) scanDirectory() error {
@@ -277,11 +290,11 @@ func (fm *FileManager) RenameFile(oldPath string, newName string) (string, error
 	return newPath, nil
 }
 
-// DeleteFile deletes a file from the file system
+// DeleteFile moves a file to the system trash/recycle bin
 func (fm *FileManager) DeleteFile(path string) error {
-	// Delete the file from the file system
-	if err := os.Remove(path); err != nil {
-		return fmt.Errorf("failed to delete file: %w", err)
+	// Move the file to trash instead of permanent deletion
+	if err := MoveToTrash(path); err != nil {
+		return fmt.Errorf("failed to move file to trash: %w", err)
 	}
 
 	// Remove the file from the list
@@ -297,4 +310,64 @@ func (fm *FileManager) DeleteFile(path string) error {
 	}
 
 	return nil
+}
+
+// StartWatching starts watching the current directory for file changes
+func (fm *FileManager) StartWatching() error {
+	if fm.currentDirectory == "" {
+		return nil
+	}
+
+	// Create new watcher
+	watcher, err := fsnotify.NewWatcher()
+	if err != nil {
+		return fmt.Errorf("failed to create watcher: %w", err)
+	}
+
+	fm.watcher = watcher
+
+	// Add directory to watcher
+	if err := fm.watcher.Add(fm.currentDirectory); err != nil {
+		fm.watcher.Close()
+		fm.watcher = nil
+		return fmt.Errorf("failed to watch directory: %w", err)
+	}
+
+	// Start watching in a goroutine
+	go func() {
+		for {
+			select {
+			case event, ok := <-fm.watcher.Events:
+				if !ok {
+					return
+				}
+
+				// Only process .excalidraw files
+				if !strings.HasSuffix(event.Name, ".excalidraw") {
+					continue
+				}
+
+				// Re-scan directory on any Create, Remove, or Rename event
+				if event.Has(fsnotify.Create) || event.Has(fsnotify.Remove) || event.Has(fsnotify.Rename) {
+					fm.scanDirectory()
+				}
+
+			case err, ok := <-fm.watcher.Errors:
+				if !ok {
+					return
+				}
+				fmt.Printf("File watcher error: %v\n", err)
+			}
+		}
+	}()
+
+	return nil
+}
+
+// StopWatching stops watching the current directory
+func (fm *FileManager) StopWatching() {
+	if fm.watcher != nil {
+		fm.watcher.Close()
+		fm.watcher = nil
+	}
 }

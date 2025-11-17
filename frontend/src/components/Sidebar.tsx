@@ -171,12 +171,12 @@ const FileListItem: React.FC<FileListItemProps> = ({ file, isActive, onClick, on
             className="bg-popover border border-border rounded-lg shadow-xl p-6 max-w-md mx-4"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="text-lg font-semibold mb-2">Delete File?</h3>
+            <h3 className="text-lg font-semibold mb-2">Move to Trash?</h3>
             <p className="text-sm text-muted-foreground mb-4">
-              Are you sure you want to delete <span className="font-medium text-foreground">"{file.name}"</span>?
+              Are you sure you want to move <span className="font-medium text-foreground">"{file.name}"</span> to the trash?
               <br />
               <br />
-              This action cannot be undone.
+              You can restore it from your system's trash/recycle bin if needed.
             </p>
             <div className="flex justify-end space-x-2">
               <button
@@ -189,7 +189,7 @@ const FileListItem: React.FC<FileListItemProps> = ({ file, isActive, onClick, on
                 onClick={handleConfirmDelete}
                 className="btn btn-sm bg-destructive text-destructive-foreground hover:bg-destructive/90"
               >
-                Delete
+                Move to Trash
               </button>
             </div>
           </div>

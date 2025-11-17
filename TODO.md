@@ -5,8 +5,8 @@ Based on PRD analysis (specs/0001-spec.md) - Last updated: 2025-11-16
 ## Overall Status
 - **P0 (Core Features):** ✅ 100% Complete
 - **P1 (Important Features):** ✅ 100% Complete
-- **P2 (Enhancement Features):** 🟡 50% Complete
-- **Overall Completion:** ~92%
+- **P2 (Enhancement Features):** ✅ 100% Complete
+- **Overall Completion:** ✅ 100%
 
 ---
 
@@ -169,21 +169,42 @@ Based on PRD analysis (specs/0001-spec.md) - Last updated: 2025-11-16
 
 ---
 
-### 6. ❌ Trash/Recycle Bin Integration
-**Status:** Not implemented
-**Location:** `file_manager.go:283` (uses `os.Remove()`)
+### 6. ✅ Trash/Recycle Bin Integration
+**Status:** Implemented
+**Location:** `trash.go`, `file_manager.go:280-300`, `frontend/src/components/Sidebar.tsx:168-197`
 **PRD Reference:** Section 2.4.3 - Optional safety feature
 
-**Missing:**
-- Move files to system trash instead of permanent deletion
-- Cross-platform trash support (macOS/Windows/Linux)
+**Implemented Features:**
+- Cross-platform trash/recycle bin support (macOS, Windows, Linux)
+- Files moved to system trash instead of permanent deletion
+- User can restore files from system trash if needed
+- Platform-specific implementations:
+  - macOS: AppleScript via osascript
+  - Windows: PowerShell with FileIO.FileSystem
+  - Linux: trash-cli or fallback to ~/.local/share/Trash/files/
 
-**Implementation:**
-- Use cross-platform trash library (e.g., `github.com/atotto/trash` or similar)
-- Replace `os.Remove()` with trash move operation
-- Optional: Add preference toggle for permanent delete vs trash
+**Implementation Details:**
 
-**Priority:** LOW (nice safety feature but not critical)
+**Backend (trash.go):**
+- `MoveToTrash()` function with runtime OS detection
+- `moveToTrashMacOS()`: Uses AppleScript to move files to Trash
+- `moveToTrashWindows()`: Uses PowerShell to move files to Recycle Bin
+- `moveToTrashLinux()`: Tries trash-cli first, falls back to freedesktop.org spec (~/.local/share/Trash)
+- Handles duplicate filenames in trash with timestamp suffixes
+- `PermanentlyDelete()` available for bypassing trash if needed
+
+**Backend (file_manager.go):**
+- `DeleteFile()` now calls `MoveToTrash()` instead of `os.Remove()`
+- Safe file deletion with recovery option
+
+**Frontend (Sidebar.tsx):**
+- Updated delete confirmation dialog:
+  - Title: "Move to Trash?" instead of "Delete File?"
+  - Message explains files can be restored from system trash
+  - Button text: "Move to Trash" instead of "Delete"
+  - Informative messaging about trash location
+
+**Priority:** LOW (nice safety feature) ✅ COMPLETED
 
 ---
 
@@ -219,8 +240,14 @@ Based on PRD analysis (specs/0001-spec.md) - Last updated: 2025-11-16
 
 ---
 
-**Next Steps:**
-1. Fix sidebar width persistence (HIGH)
-2. Add keyboard shortcuts (MEDIUM)
-3. Implement file search (MEDIUM)
-4. Add dark mode toggle (MEDIUM)
+## ✅ All TODO Items Completed!
+
+All 6 TODO items from the PRD analysis have been successfully implemented:
+1. ✅ Sidebar width persistence bug fix (HIGH)
+2. ✅ Keyboard shortcuts (MEDIUM)
+3. ✅ File search/filter in sidebar (MEDIUM)
+4. ✅ Manual dark mode toggle (MEDIUM)
+5. ✅ Crash recovery with temp backups (LOW)
+6. ✅ Trash/recycle bin integration (LOW)
+
+**ExcaliApp is now at 100% completion of all PRD requirements!**
