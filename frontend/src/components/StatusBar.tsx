@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React from 'react'
 import { Save, CheckCircle, AlertCircle, Loader2 } from 'lucide-react'
 import { cn, formatDate } from '../lib/utils'
 import { SaveStatus } from '../types'
@@ -20,16 +20,6 @@ const StatusBar: React.FC<StatusBarProps> = ({
   onSave
 }) => {
   const { isDirty } = useApp()
-  const [currentTime, setCurrentTime] = useState(new Date())
-
-  // Update current time every second
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentTime(new Date())
-    }, 1000)
-
-    return () => clearInterval(interval)
-  }, [])
 
   const getSaveStatusIcon = () => {
     if (saveStatus.isSaving) {
@@ -94,10 +84,6 @@ const StatusBar: React.FC<StatusBarProps> = ({
             Save
           </button>
         )}
-
-        <div className="text-xs text-muted-foreground">
-          {currentTime.toLocaleTimeString()}
-        </div>
       </div>
     </div>
   )
