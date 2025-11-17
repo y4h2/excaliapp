@@ -352,12 +352,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const renameFile = async (oldPath: string, newName: string) => {
     try {
-      await RenameFile(oldPath, newName)
+      const newPath = await RenameFile(oldPath, newName)
       await loadFiles()
-      // If the renamed file was the current file, reload it
+      // If the renamed file was the current file, update the path
       if (state.currentFile === oldPath) {
-        const currentDir = state.appState?.lastDirectory || ''
-        const newPath = `${currentDir}/${newName}${newName.endsWith('.excalidraw') ? '' : '.excalidraw'}`
         dispatch({ type: 'SET_CURRENT_FILE', payload: newPath })
       }
     } catch (error) {

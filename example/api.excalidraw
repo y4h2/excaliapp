@@ -60,7 +60,10 @@
     "openMenu": null,
     "openPopup": null,
     "openSidebar": null,
-    "originSnapOffset": null,
+    "originSnapOffset": {
+      "x": 0,
+      "y": 0
+    },
     "pasteDialog": {
       "data": null,
       "shown": false

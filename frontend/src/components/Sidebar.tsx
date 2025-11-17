@@ -14,13 +14,23 @@ interface FileListItemProps {
 const FileListItem: React.FC<FileListItemProps> = ({ file, isActive, onClick, onRename }) => {
   const [isEditing, setIsEditing] = useState(false)
   const [editName, setEditName] = useState('')
+  const [showContextMenu, setShowContextMenu] = useState(false)
+  const [contextMenuPos, setContextMenuPos] = useState({ x: 0, y: 0 })
   const inputRef = useRef<HTMLInputElement>(null)
+  const menuRef = useRef<HTMLDivElement>(null)
 
-  const handleDoubleClick = (e: React.MouseEvent) => {
+  const handleContextMenu = (e: React.MouseEvent) => {
+    e.preventDefault()
     e.stopPropagation()
+    setContextMenuPos({ x: e.clientX, y: e.clientY })
+    setShowContextMenu(true)
+  }
+
+  const handleStartRename = () => {
     const nameWithoutExt = file.name.replace('.excalidraw', '')
     setEditName(nameWithoutExt)
     setIsEditing(true)
+    setShowContextMenu(false)
   }
 
   const handleSave = () => {
@@ -54,6 +64,19 @@ const FileListItem: React.FC<FileListItemProps> = ({ file, isActive, onClick, on
     }
   }, [isEditing])
 
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setShowContextMenu(false)
+      }
+    }
+
+    if (showContextMenu) {
+      document.addEventListener('mousedown', handleClickOutside)
+      return () => document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [showContextMenu])
+
   if (isEditing) {
     return (
       <div
@@ -80,25 +103,45 @@ const FileListItem: React.FC<FileListItemProps> = ({ file, isActive, onClick, on
   }
 
   return (
-    <div
-      className={cn(
-        "file-item",
-        isActive && "active",
-        file.hasChanges && "has-changes"
+    <>
+      <div
+        className={cn(
+          "file-item",
+          isActive && "active",
+          file.hasChanges && "has-changes"
+        )}
+        onClick={onClick}
+        onContextMenu={handleContextMenu}
+        title={`${file.name}${file.hasChanges ? ' (modified)' : ''}\nRight-click for options`}
+      >
+        <div className="flex items-center min-w-0">
+          <FileText className="icon mr-2 flex-shrink-0" />
+          <span className="truncate font-medium">{file.name}</span>
+          {file.isNew && <Circle className="icon-sm ml-1 text-green-500" />}
+        </div>
+        <div className="text-xs text-muted-foreground ml-2 flex-shrink-0">
+          {formatDate(file.modified)}
+        </div>
+      </div>
+
+      {showContextMenu && (
+        <div
+          ref={menuRef}
+          className="fixed bg-popover border border-border rounded-md shadow-lg py-1 z-50"
+          style={{
+            left: `${contextMenuPos.x}px`,
+            top: `${contextMenuPos.y}px`,
+          }}
+        >
+          <button
+            className="w-full text-left px-4 py-2 text-sm hover:bg-accent flex items-center space-x-2"
+            onClick={handleStartRename}
+          >
+            <span>Rename</span>
+          </button>
+        </div>
       )}
-      onClick={onClick}
-      onDoubleClick={handleDoubleClick}
-      title={`${file.name}${file.hasChanges ? ' (modified)' : ''}\nDouble-click to rename`}
-    >
-      <div className="flex items-center min-w-0">
-        <FileText className="icon mr-2 flex-shrink-0" />
-        <span className="truncate font-medium">{file.name}</span>
-        {file.isNew && <Circle className="icon-sm ml-1 text-green-500" />}
-      </div>
-      <div className="text-xs text-muted-foreground ml-2 flex-shrink-0">
-        {formatDate(file.modified)}
-      </div>
-    </div>
+    </>
   )
 }
 

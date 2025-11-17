@@ -288,10 +288,11 @@ func (a *App) GetFileName() string {
 }
 
 // RenameFile renames a file and updates the current file if it matches
-func (a *App) RenameFile(oldPath string, newName string) error {
+// Returns the new file path
+func (a *App) RenameFile(oldPath string, newName string) (string, error) {
 	newPath, err := a.fileManager.RenameFile(oldPath, newName)
 	if err != nil {
-		return fmt.Errorf("failed to rename file: %w", err)
+		return "", fmt.Errorf("failed to rename file: %w", err)
 	}
 
 	// If the renamed file is currently open, update the current file path
@@ -300,7 +301,7 @@ func (a *App) RenameFile(oldPath string, newName string) error {
 		a.autoSave.SetCurrentFile(newPath)
 	}
 
-	return nil
+	return newPath, nil
 }
 
 // domReady is called after the frontend has been loaded
