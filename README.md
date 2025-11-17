@@ -1,19 +1,245 @@
-# README
+# ExcaliApp
 
-## About
+一个简洁、高效的 Excalidraw 文件管理和编辑器桌面应用。
 
-This is the official Wails React-TS template.
+## 简介
 
-You can configure the project by editing `wails.json`. More information about the project settings can be found
-here: https://wails.io/docs/reference/project-config
+ExcaliApp 是一个专为管理和编辑 `.excalidraw` 文件而设计的桌面应用程序。它提供了直观的双面板界面：左侧是文件管理侧边栏，右侧是完整功能的 Excalidraw 绘图画布。
 
-## Live Development
+## 主要特性
 
-To run in live development mode, run `wails dev` in the project directory. This will run a Vite development
-server that will provide very fast hot reload of your frontend changes. If you want to develop in a browser
-and have access to your Go methods, there is also a dev server that runs on http://localhost:34115. Connect
-to this in your browser, and you can call your Go code from devtools.
+### 📁 文件管理
+- **目录浏览**：选择包含 `.excalidraw` 文件的文件夹，自动扫描所有绘图文件
+- **文件列表**：在侧边栏查看所有文件，按名称排序显示
+- **快速切换**：点击文件名即可在不同绘图之间快速切换
+- **实时监控**：自动检测目录中的文件变化，实时更新文件列表
 
-## Building
+### ✏️ 文件操作
+- **新建文件**：快速创建新的 Excalidraw 绘图文件
+  - 自动命名为 `untitled.excalidraw`
+  - 如果文件名已存在，自动递增编号（`untitled-1.excalidraw`, `untitled-2.excalidraw`...）
+- **重命名文件**：两种方式重命名文件
+  - 点击顶部文件名旁的编辑图标
+  - 在侧边栏右键点击文件，选择"重命名"
+- **删除文件**：安全删除文件
+  - 文件会被移动到系统回收站（而非永久删除）
+  - 可以从系统回收站中恢复已删除的文件
+  - 删除前会显示确认对话框
 
-To build a redistributable, production mode package, use `wails build`.
+### 💾 自动保存
+- **智能保存**：多种触发方式，确保工作不会丢失
+  - 停止编辑 5 秒后自动保存
+  - 切换到其他文件时自动保存当前文件
+  - 应用失去焦点时自动保存
+- **保存状态指示**：底部状态栏实时显示保存状态
+  - "已保存" - 所有更改已保存
+  - "保存中..." - 正在保存文件
+  - "有未保存的更改" - 存在未保存的修改
+- **崩溃恢复**：
+  - 编辑时每 30 秒自动备份
+  - 应用启动时检查未保存的备份
+  - 可选择恢复或放弃备份内容
+
+### 🎨 界面功能
+- **可折叠侧边栏**：
+  - 点击侧边栏顶部的折叠按钮收起/展开
+  - 快捷键：`Cmd/Ctrl + B`
+  - 可调整侧边栏宽度（拖动右侧边缘）
+  - 宽度设置会自动保存
+- **文件搜索**：
+  - 在侧边栏顶部的搜索框中输入关键词
+  - 实时过滤文件列表
+  - 快捷键：`Cmd/Ctrl + F` 聚焦搜索框
+- **主题切换**：
+  - 三种主题模式：系统默认、浅色、深色
+  - 点击状态栏右侧的主题按钮切换
+  - 主题偏好设置会自动保存
+
+### ⌨️ 键盘快捷键
+
+#### 文件操作
+- `Cmd/Ctrl + O` - 打开目录
+- `Cmd/Ctrl + N` - 新建文件
+- `Cmd/Ctrl + S` - 保存当前文件
+- `Cmd/Ctrl + W` - 关闭当前文件
+- `Cmd/Ctrl + Q` - 退出应用
+
+#### 导航
+- `Cmd/Ctrl + 1-9` - 快速切换到对应序号的文件
+- `Cmd/Ctrl + Tab` - 切换到下一个文件
+- `Cmd/Ctrl + Shift + Tab` - 切换到上一个文件
+- `Cmd/Ctrl + B` - 切换侧边栏显示/隐藏
+- `Cmd/Ctrl + F` - 聚焦文件搜索框
+
+#### 帮助
+- `Cmd/Ctrl + /` - 显示键盘快捷键帮助
+
+## 系统要求
+
+- **macOS**: 10.13 (High Sierra) 或更高版本
+- **Windows**: Windows 10 或更高版本
+- **Linux**: 主流发行版（需支持 GTK3）
+
+## 安装
+
+### macOS
+1. 下载 `ExcaliApp.dmg` 文件
+2. 双击打开 DMG 文件
+3. 将 ExcaliApp 拖动到"应用程序"文件夹
+4. 在"应用程序"中找到 ExcaliApp 并启动
+
+### Windows
+1. 下载 `ExcaliApp-Setup.exe` 安装程序
+2. 双击运行安装程序
+3. 按照安装向导完成安装
+4. 从开始菜单或桌面快捷方式启动应用
+
+### Linux
+1. 下载 `ExcaliApp.AppImage` 文件
+2. 添加执行权限：`chmod +x ExcaliApp.AppImage`
+3. 双击运行，或在终端中执行：`./ExcaliApp.AppImage`
+
+## 使用指南
+
+### 首次使用
+
+1. **打开目录**
+   - 启动应用后，点击侧边栏的"打开目录"按钮
+   - 选择包含 `.excalidraw` 文件的文件夹
+   - 应用会自动扫描并显示所有 Excalidraw 文件
+
+2. **创建第一个绘图**
+   - 点击侧边栏顶部的 ➕ 按钮，或使用快捷键 `Cmd/Ctrl + N`
+   - 新文件会自动创建并在画布中打开
+   - 开始使用 Excalidraw 的完整功能进行绘图
+
+3. **保存和管理**
+   - 文件会自动保存，无需手动操作
+   - 可以随时重命名或删除文件
+   - 应用会记住最后使用的目录，下次启动时自动打开
+
+### 日常工作流
+
+1. **组织文件**
+   - 将相关的 `.excalidraw` 文件放在同一文件夹中
+   - 使用有意义的文件名便于识别
+   - 利用搜索功能快速定位文件
+
+2. **高效编辑**
+   - 使用键盘快捷键快速切换文件
+   - 利用自动保存功能专注于创作
+   - 通过侧边栏折叠获得更大的画布空间
+
+3. **安全备份**
+   - 定期备份整个 Excalidraw 文件夹
+   - 删除的文件可从系统回收站恢复
+   - 应用崩溃后可恢复未保存的内容
+
+## 数据存储
+
+### 文件位置
+- **绘图文件**：存储在您选择的目录中（`.excalidraw` 格式）
+- **应用配置**：`~/.config/excaliapp/state.json`
+  - 包含最后打开的目录
+  - 窗口大小和位置
+  - 侧边栏状态和宽度
+  - 主题偏好设置
+- **备份文件**：`~/.config/excaliapp/backups/`
+  - 用于崩溃恢复
+  - 成功保存后会自动清理
+
+### 文件格式
+所有绘图文件使用标准的 Excalidraw JSON 格式，可以：
+- 在 [excalidraw.com](https://excalidraw.com) 网页版中打开
+- 与其他 Excalidraw 应用共享
+- 导出为 PNG、SVG 等格式（使用 Excalidraw 原生功能）
+
+## 常见问题
+
+### 文件列表没有更新？
+应用会自动监控目录变化。如果外部修改了文件（如从回收站恢复），侧边栏应该会自动刷新。如果没有，请尝试重新打开目录。
+
+### 删除的文件找不到了？
+文件被移动到系统回收站：
+- **macOS**：打开"废纸篓"（Finder > 清倒废纸篓）
+- **Windows**：打开"回收站"
+- **Linux**：打开"回收站"或 `~/.local/share/Trash/files/`
+
+### 如何恢复崩溃后的工作？
+1. 重新启动应用
+2. 如果有未保存的备份，会自动弹出恢复对话框
+3. 选择"恢复"以还原文件内容，或"放弃"以删除备份
+
+### 可以同时打开多个目录吗？
+当前版本只支持同时打开一个目录。切换到另一个目录会关闭当前目录的所有文件。
+
+### 支持导出图片吗？
+ExcaliApp 集成了完整的 Excalidraw 编辑器，您可以使用 Excalidraw 的原生导出功能：
+1. 点击画布左上角的菜单按钮（三条横线）
+2. 选择"导出图像"或"导出为 SVG"
+3. 选择保存位置
+
+## 开发指南
+
+如果您想参与开发或自行构建应用，请参考以下说明：
+
+### 技术栈
+- **后端**：Go 1.23 + Wails v2.11.0
+- **前端**：React 18 + TypeScript + Vite 7
+- **绘图引擎**：Excalidraw SDK
+- **样式**：TailwindCSS
+
+### 开发命令
+
+```bash
+# 安装依赖
+go mod download
+cd frontend && npm install
+
+# 开发模式（热重载）
+wails dev
+
+# 构建生产版本
+wails build
+
+# 仅构建前端
+cd frontend && npm run build
+```
+
+### 项目结构
+```
+excaliapp/
+├── main.go              # 应用入口
+├── app.go               # 主应用逻辑
+├── file_manager.go      # 文件管理
+├── auto_save.go         # 自动保存
+├── recovery.go          # 崩溃恢复
+├── trash.go             # 回收站集成
+├── menu.go              # 原生菜单
+├── persistence.go       # 状态持久化
+├── frontend/            # React 前端
+│   ├── src/
+│   │   ├── App.tsx
+│   │   ├── components/
+│   │   └── contexts/
+│   └── wailsjs/         # 自动生成的绑定
+├── build/               # 构建配置
+└── specs/               # 产品需求文档
+```
+
+更多开发细节请参考 `CLAUDE.md` 和 `specs/0001-spec.md`。
+
+## 技术支持
+
+如果遇到问题或有功能建议，请访问：
+- **GitHub 仓库**：[提交 Issue](https://github.com/your-repo/excaliapp/issues)
+- **项目文档**：查看 `specs/` 目录下的详细文档
+- **开发指南**：查看 `CLAUDE.md` 文件
+
+## 许可证
+
+请查看 LICENSE 文件了解详细信息。
+
+---
+
+**祝您使用愉快！** 🎨✨
