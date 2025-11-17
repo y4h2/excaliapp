@@ -35,3 +35,7 @@ export function SaveCurrentFile():Promise<void>;
 export function SaveFile(arg1:string):Promise<void>;
 
 export function UpdateFileContent(arg1:string):Promise<void>;
+
+export function UpdateSidebarCollapsed(arg1:boolean):Promise<void>;
+
+export function UpdateSidebarWidth(arg1:number):Promise<void>;

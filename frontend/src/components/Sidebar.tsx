@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react'
-import { Menu, Plus, FolderOpen, PanelLeft, PanelRight, FileText, Circle } from 'lucide-react'
+import { Menu, Plus, FolderOpen, PanelLeft, PanelRight, FileText, Circle, Search, X } from 'lucide-react'
 import { cn, formatDate } from '../lib/utils'
 import { ExcalidrawFile } from '../types'
 import { useApp } from '../contexts/AppContext'
@@ -201,25 +201,29 @@ const FileListItem: React.FC<FileListItemProps> = ({ file, isActive, onClick, on
 
 interface ResizeHandleProps {
   onResize: (delta: number) => void
+  onResizeComplete?: (finalWidth: number) => void
   minWidth: number
   maxWidth: number
   initialWidth: number
 }
 
-const ResizeHandle: React.FC<ResizeHandleProps> = ({ onResize, minWidth, maxWidth, initialWidth }) => {
+const ResizeHandle: React.FC<ResizeHandleProps> = ({ onResize, onResizeComplete, minWidth, maxWidth, initialWidth }) => {
   const [isResizing, setIsResizing] = useState(false)
   const startXRef = useRef(0)
   const startWidthRef = useRef(initialWidth)
+  const currentWidthRef = useRef(initialWidth)
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     e.preventDefault()
     setIsResizing(true)
     startXRef.current = e.clientX
     startWidthRef.current = initialWidth
+    currentWidthRef.current = initialWidth
 
     const handleMouseMove = (moveEvent: MouseEvent) => {
       const delta = moveEvent.clientX - startXRef.current
       const newWidth = Math.max(minWidth, Math.min(maxWidth, startWidthRef.current + delta))
+      currentWidthRef.current = newWidth
       onResize(newWidth - startWidthRef.current)
     }
 
@@ -228,12 +232,17 @@ const ResizeHandle: React.FC<ResizeHandleProps> = ({ onResize, minWidth, maxWidt
       document.removeEventListener('mousemove', handleMouseMove)
       document.removeEventListener('mouseup', handleMouseUp)
       document.body.style.cursor = ''
+
+      // Trigger complete callback with final width
+      if (onResizeComplete) {
+        onResizeComplete(currentWidthRef.current)
+      }
     }
 
     document.addEventListener('mousemove', handleMouseMove)
     document.addEventListener('mouseup', handleMouseUp)
     document.body.style.cursor = 'col-resize'
-  }, [onResize, minWidth, maxWidth, initialWidth])
+  }, [onResize, onResizeComplete, minWidth, maxWidth, initialWidth])
 
   return (
     <div
@@ -250,10 +259,23 @@ interface SidebarProps {
   onToggle: () => void
   width: number
   onResize: (width: number) => void
+  onResizeComplete?: (width: number) => void
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggle, width, onResize }) => {
+const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggle, width, onResize, onResizeComplete }) => {
   const { files, currentFile, loadFile, openDirectory, newFile, currentDirectory, renameFile, deleteFile } = useApp()
+  const [searchTerm, setSearchTerm] = useState('')
+  const searchInputRef = useRef<HTMLInputElement>(null)
+
+  // Filter files based on search term
+  const filteredFiles = useCallback(() => {
+    if (!searchTerm.trim()) return files
+
+    const term = searchTerm.toLowerCase()
+    return files.filter(file =>
+      file.name.toLowerCase().includes(term)
+    )
+  }, [files, searchTerm])()
 
   const handleFileClick = useCallback((file: ExcalidrawFile) => {
     loadFile(file.path)
@@ -274,6 +296,28 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggle, width, onResiz
   const handleDelete = useCallback((filePath: string) => {
     deleteFile(filePath)
   }, [deleteFile])
+
+  const handleClearSearch = useCallback(() => {
+    setSearchTerm('')
+    searchInputRef.current?.focus()
+  }, [])
+
+  // Keyboard shortcut to focus search (Cmd/Ctrl+F)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0
+      const modifier = isMac ? e.metaKey : e.ctrlKey
+
+      // Cmd/Ctrl+F: Focus search input (only if sidebar is expanded and has files)
+      if (modifier && e.key === 'f' && !isCollapsed && files.length > 0) {
+        e.preventDefault()
+        searchInputRef.current?.focus()
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [isCollapsed, files.length])
 
   if (isCollapsed) {
     return (
@@ -333,7 +377,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggle, width, onResiz
         </div>
       </div>
 
-      <div className="p-2 border-b">
+      <div className="p-2 border-b space-y-2">
         <button
           onClick={handleOpenDirectory}
           className="btn btn-secondary w-full text-sm"
@@ -341,8 +385,32 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggle, width, onResiz
           <FolderOpen className="icon-sm mr-2" />
           {currentDirectory ? 'Change Directory' : 'Open Directory'}
         </button>
+
+        {currentDirectory && files.length > 0 && (
+          <div className="relative">
+            <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+            <input
+              ref={searchInputRef}
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Search files..."
+              className="w-full pl-8 pr-8 py-1.5 text-sm bg-background border border-border rounded focus:outline-none focus:ring-1 focus:ring-primary"
+            />
+            {searchTerm && (
+              <button
+                onClick={handleClearSearch}
+                className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 hover:bg-accent rounded transition-colors"
+                title="Clear search"
+              >
+                <X className="w-3.5 h-3.5 text-muted-foreground" />
+              </button>
+            )}
+          </div>
+        )}
+
         {currentDirectory && (
-          <div className="text-xs text-muted-foreground mt-2 truncate" title={currentDirectory}>
+          <div className="text-xs text-muted-foreground truncate" title={currentDirectory}>
             {currentDirectory}
           </div>
         )}
@@ -354,9 +422,21 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggle, width, onResiz
             <p className="text-sm">No .excalidraw files found</p>
             <p className="text-xs mt-1">Open a directory to get started</p>
           </div>
+        ) : filteredFiles.length === 0 ? (
+          <div className="empty-state">
+            <Search className="w-8 h-8 text-muted-foreground mb-2 mx-auto" />
+            <p className="text-sm">No matching files</p>
+            <p className="text-xs mt-1">Try a different search term</p>
+            <button
+              onClick={handleClearSearch}
+              className="btn btn-ghost btn-sm mt-3"
+            >
+              Clear search
+            </button>
+          </div>
         ) : (
           <div className="space-y-1">
-            {files.map((file) => (
+            {filteredFiles.map((file) => (
               <FileListItem
                 key={file.path}
                 file={file}
@@ -372,6 +452,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggle, width, onResiz
 
       <ResizeHandle
         onResize={(delta) => onResize(width + delta)}
+        onResizeComplete={onResizeComplete}
         minWidth={200}
         maxWidth={500}
         initialWidth={width}

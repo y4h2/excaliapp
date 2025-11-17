@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react'
-import { Save, FileText, Folder, Edit2 } from 'lucide-react'
+import { Save, FileText, Folder, Edit2, HelpCircle } from 'lucide-react'
 import { useApp } from '../contexts/AppContext'
 import { cn } from '../lib/utils'
 
@@ -9,6 +9,7 @@ interface MainHeaderProps {
   onSave: () => void
   fileCount: number
   currentDirectory: string | null
+  onShowKeyboardHelp?: () => void
 }
 
 const MainHeader: React.FC<MainHeaderProps> = ({
@@ -16,7 +17,8 @@ const MainHeader: React.FC<MainHeaderProps> = ({
   isDirty,
   onSave,
   fileCount,
-  currentDirectory
+  currentDirectory,
+  onShowKeyboardHelp
 }) => {
   const { closeFile, renameFile } = useApp()
   const [isEditing, setIsEditing] = useState(false)
@@ -119,6 +121,16 @@ const MainHeader: React.FC<MainHeaderProps> = ({
         <div className="text-sm text-muted-foreground">
           {fileCount} file{fileCount !== 1 ? 's' : ''}
         </div>
+
+        {onShowKeyboardHelp && (
+          <button
+            onClick={onShowKeyboardHelp}
+            className="btn btn-ghost btn-icon btn-sm"
+            title="Keyboard shortcuts (Cmd/Ctrl + /)"
+          >
+            <HelpCircle className="icon-sm" />
+          </button>
+        )}
 
         {currentFile && (
           <>

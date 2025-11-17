@@ -319,6 +319,24 @@ func (a *App) DeleteFile(path string) error {
 	return nil
 }
 
+// UpdateSidebarWidth updates the sidebar width in app state and persists it
+func (a *App) UpdateSidebarWidth(width int) error {
+	a.appState.SidebarWidth = width
+	if err := SaveAppState(a.appState); err != nil {
+		return fmt.Errorf("failed to save sidebar width: %w", err)
+	}
+	return nil
+}
+
+// UpdateSidebarCollapsed updates the sidebar collapsed state and persists it
+func (a *App) UpdateSidebarCollapsed(isCollapsed bool) error {
+	a.appState.IsSidebarCollapsed = isCollapsed
+	if err := SaveAppState(a.appState); err != nil {
+		return fmt.Errorf("failed to save sidebar state: %w", err)
+	}
+	return nil
+}
+
 // domReady is called after the frontend has been loaded
 func (a *App) domReady(ctx context.Context) {
 	// Menu manager is now created in startup and getMenu creates it during app creation

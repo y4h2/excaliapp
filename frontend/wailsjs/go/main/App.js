@@ -69,3 +69,11 @@ export function SaveFile(arg1) {
 export function UpdateFileContent(arg1) {
   return window['go']['main']['App']['UpdateFileContent'](arg1);
 }
+
+export function UpdateSidebarCollapsed(arg1) {
+  return window['go']['main']['App']['UpdateSidebarCollapsed'](arg1);
+}
+
+export function UpdateSidebarWidth(arg1) {
+  return window['go']['main']['App']['UpdateSidebarWidth'](arg1);
+}

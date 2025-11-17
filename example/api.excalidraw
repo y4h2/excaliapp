@@ -45,7 +45,7 @@
     },
     "frameToHighlight": null,
     "gridSize": null,
-    "height": 658,
+    "height": 646,
     "isBindingEnabled": true,
     "isLoading": false,
     "isResizing": false,
@@ -54,7 +54,7 @@
     "multiElement": null,
     "name": "Excalidraw Canvas",
     "objectsSnapModeEnabled": false,
-    "offsetLeft": 300,
+    "offsetLeft": 318,
     "offsetTop": 77,
     "openDialog": null,
     "openMenu": null,
@@ -92,7 +92,7 @@
     "toast": null,
     "viewBackgroundColor": "#ffffff",
     "viewModeEnabled": false,
-    "width": 724,
+    "width": 706,
     "zenModeEnabled": false,
     "zoom": {
       "value": 1

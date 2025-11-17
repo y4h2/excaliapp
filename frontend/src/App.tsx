@@ -4,8 +4,10 @@ import Sidebar from './components/Sidebar'
 import Canvas from './components/Canvas'
 import StatusBar from './components/StatusBar'
 import MainHeader from './components/MainHeader'
+import KeyboardShortcutsHelp from './components/KeyboardShortcutsHelp'
 import { NoDirectoryEmptyState, NoFilesEmptyState, NoFileSelectedEmptyState } from './components/EmptyState'
 import { setDocumentTheme, getSystemTheme } from './lib/utils'
+import { UpdateSidebarWidth, UpdateSidebarCollapsed } from '../wailsjs/go/main/App'
 import './styles/globals.css'
 
 function AppContent() {
@@ -28,6 +30,7 @@ function AppContent() {
 
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
   const [sidebarWidth, setSidebarWidth] = useState(300)
+  const [showKeyboardHelp, setShowKeyboardHelp] = useState(false)
 
   // Handle system theme changes
   useEffect(() => {
@@ -56,12 +59,87 @@ function AppContent() {
     }
   }, [appState])
 
-  const handleSidebarToggle = useCallback(() => {
-    setIsSidebarCollapsed(prev => !prev)
-  }, [])
+  // Callback functions
+  const handleSidebarToggle = useCallback(async () => {
+    const newState = !isSidebarCollapsed
+    setIsSidebarCollapsed(newState)
+
+    // Persist to backend
+    try {
+      await UpdateSidebarCollapsed(newState)
+    } catch (error) {
+      console.error('Failed to save sidebar state:', error)
+    }
+  }, [isSidebarCollapsed])
+
+  // Global keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0
+      const modifier = isMac ? e.metaKey : e.ctrlKey
+
+      // Cmd/Ctrl+B: Toggle sidebar
+      if (modifier && e.key === 'b') {
+        e.preventDefault()
+        handleSidebarToggle()
+        return
+      }
+
+      // Cmd/Ctrl+1-9: Switch to file by index
+      if (modifier && e.key >= '1' && e.key <= '9') {
+        e.preventDefault()
+        const index = parseInt(e.key) - 1
+        if (index < files.length) {
+          loadFile(files[index].path)
+        }
+        return
+      }
+
+      // Cmd/Ctrl+Tab: Next file
+      if (modifier && e.key === 'Tab' && !e.shiftKey) {
+        e.preventDefault()
+        const currentIndex = files.findIndex(f => f.path === currentFile)
+        if (currentIndex >= 0 && files.length > 0) {
+          const nextIndex = (currentIndex + 1) % files.length
+          loadFile(files[nextIndex].path)
+        }
+        return
+      }
+
+      // Cmd/Ctrl+Shift+Tab: Previous file
+      if (modifier && e.key === 'Tab' && e.shiftKey) {
+        e.preventDefault()
+        const currentIndex = files.findIndex(f => f.path === currentFile)
+        if (currentIndex >= 0 && files.length > 0) {
+          const prevIndex = currentIndex === 0 ? files.length - 1 : currentIndex - 1
+          loadFile(files[prevIndex].path)
+        }
+        return
+      }
+
+      // Cmd/Ctrl+/: Show keyboard shortcuts help
+      if (modifier && e.key === '/') {
+        e.preventDefault()
+        setShowKeyboardHelp(true)
+        return
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [files, currentFile, handleSidebarToggle, loadFile])
 
   const handleSidebarResize = useCallback((width: number) => {
     setSidebarWidth(width)
+  }, [])
+
+  const handleSidebarResizeComplete = useCallback(async (width: number) => {
+    // Persist to backend when resize completes
+    try {
+      await UpdateSidebarWidth(width)
+    } catch (error) {
+      console.error('Failed to save sidebar width:', error)
+    }
   }, [])
 
   const handleCanvasChange = useCallback((content: string) => {
@@ -111,6 +189,7 @@ function AppContent() {
         onToggle={handleSidebarToggle}
         width={sidebarWidth}
         onResize={handleSidebarResize}
+        onResizeComplete={handleSidebarResizeComplete}
       />
 
       <div className="flex-1 flex flex-col">
@@ -120,6 +199,7 @@ function AppContent() {
           onSave={handleSave}
           fileCount={files.length}
           currentDirectory={appState?.lastDirectory || null}
+          onShowKeyboardHelp={() => setShowKeyboardHelp(true)}
         />
 
         <div className="flex-1 relative overflow-hidden">
@@ -146,6 +226,11 @@ function AppContent() {
           onSave={handleSave}
         />
       </div>
+
+      <KeyboardShortcutsHelp
+        isOpen={showKeyboardHelp}
+        onClose={() => setShowKeyboardHelp(false)}
+      />
     </div>
   )
 }
