@@ -1,6 +1,6 @@
 import React from 'react'
 import { Save, CheckCircle, AlertCircle, Loader2 } from 'lucide-react'
-import { cn, formatDate } from '../lib/utils'
+import { formatDate } from '../lib/utils'
 import { SaveStatus } from '../types'
 import { useApp } from '../contexts/AppContext'
 
@@ -16,7 +16,6 @@ const StatusBar: React.FC<StatusBarProps> = ({
   saveStatus,
   currentFile,
   fileCount,
-  currentDirectory,
   onSave
 }) => {
   const { isDirty } = useApp()

@@ -64,12 +64,15 @@ go mod download              # Download Go dependencies
 ```
 
 ### Key Files
-- **app.go**: Main application struct with file management and auto-save
-- **file_manager.go**: Handles directory scanning and file operations
+- **app.go**: Main application struct with file management, auto-save, and file operations (rename, delete)
+- **file_manager.go**: Handles directory scanning and file operations (create, rename, delete, unique name generation)
 - **auto_save.go**: Debounced auto-save with multiple triggers
 - **menu.go**: Cross-platform native menu bar
 - **frontend/src/App.tsx**: Main React component with sidebar and canvas
-- **frontend/src/contexts/AppContext.tsx**: Centralized state management
+- **frontend/src/contexts/AppContext.tsx**: Centralized state management with file operations
+- **frontend/src/components/Sidebar.tsx**: File list with context menu (rename, delete) and inline editing
+- **frontend/src/components/MainHeader.tsx**: Header with inline file renaming (click edit icon)
+- **frontend/src/components/StatusBar.tsx**: Status bar showing save status and file info
 - **frontend/vite.config.ts**: Vite config with Node.js global shims for Excalidraw
 
 ### Wails Communication Pattern
@@ -82,6 +85,10 @@ go mod download              # Download Go dependencies
 
 The application is **fully functional** with all core features implemented:
 ✅ File management (directory selection, auto-scan, .excalidraw file discovery)
+✅ File operations (create, rename, delete with confirmation)
+✅ Auto-incremented untitled file names (untitled.excalidraw, untitled-1.excalidraw, etc.)
+✅ Inline file renaming (click edit icon in header or right-click in sidebar)
+✅ Context menu on sidebar files (right-click for Rename/Delete options)
 ✅ Native menu bar with File menu (Open Directory, New File, Save, Close, Exit)
 ✅ Full Excalidraw SDK integration in main canvas
 ✅ Auto-save system (on file switch, app blur, 5s inactivity)
@@ -90,6 +97,14 @@ The application is **fully functional** with all core features implemented:
 ✅ Cross-platform support (macOS, Windows, Linux)
 
 ### Known Implementation Details
+
+**File Operations**:
+- `NewFileDialog()` creates files without showing a dialog, using auto-incremented names
+- `RenameFile(oldPath, newName)` returns the new path for reliable frontend updates
+- `DeleteFile(path)` closes the file if currently open before deletion
+- Rename available in two places: header (click edit icon) and sidebar (right-click menu)
+- Delete confirmation uses React modal instead of window.confirm (Wails compatibility)
+- All file operations in `file_manager.go` update the file list and trigger `onFilesChanged` callback
 
 **Excalidraw Compatibility**: Excalidraw requires Node.js globals (`process`, `global`). Fixed by adding Vite `define` in `vite.config.ts`:
 ```javascript
