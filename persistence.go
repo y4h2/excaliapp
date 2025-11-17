@@ -13,6 +13,7 @@ type AppState struct {
 	WindowHeight  int    `json:"windowHeight"`
 	SidebarWidth  int    `json:"sidebarWidth"`
 	IsSidebarCollapsed bool `json:"isSidebarCollapsed"`
+	Theme         string `json:"theme"` // "system" | "light" | "dark"
 }
 
 const appStateFile = "excaliapp_state.json"
@@ -43,6 +44,7 @@ func LoadAppState() (*AppState, error) {
 			WindowHeight:  768,
 			SidebarWidth:  300,
 			IsSidebarCollapsed: false,
+			Theme:         "system",
 		}, nil
 	}
 

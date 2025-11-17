@@ -10,13 +10,15 @@ interface StatusBarProps {
   fileCount: number
   currentDirectory: string | null
   onSave: () => void
+  children?: React.ReactNode
 }
 
 const StatusBar: React.FC<StatusBarProps> = ({
   saveStatus,
   currentFile,
   fileCount,
-  onSave
+  onSave,
+  children
 }) => {
   const { isDirty } = useApp()
 
@@ -72,7 +74,9 @@ const StatusBar: React.FC<StatusBarProps> = ({
         </div>
       </div>
 
-      <div className="flex items-center space-x-4">
+      <div className="flex items-center space-x-2">
+        {children}
+
         {isDirty && (
           <button
             onClick={onSave}

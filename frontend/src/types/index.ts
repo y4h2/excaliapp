@@ -12,6 +12,7 @@ export interface AppState {
   windowHeight: number
   sidebarWidth: number
   isSidebarCollapsed: boolean
+  theme: string // "system" | "light" | "dark"
 }
 
 export interface FileManager {

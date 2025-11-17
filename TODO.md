@@ -87,23 +87,40 @@ Based on PRD analysis (specs/0001-spec.md) - Last updated: 2025-11-16
 
 ---
 
-### 4. ❌ Manual Dark Mode Toggle
-**Status:** Partially implemented
-**Location:** `frontend/src/App.tsx`, `frontend/src/lib/utils.ts`
-**Current State:** App follows system theme automatically
+### 4. ✅ Manual Dark Mode Toggle
+**Status:** Implemented
+**Location:** `frontend/src/components/ThemeToggle.tsx`, `frontend/src/App.tsx`, `app.go`, `persistence.go`
 
-**Missing:**
-- Manual theme override (light/dark/system)
-- Theme preference persistence
-- Toggle button in UI (header or status bar)
+**Implemented Features:**
+- Three theme modes: System (auto), Light, Dark
+- Cycle through modes by clicking theme button
+- Theme toggle button in status bar (right side)
+- Visual icons for each mode:
+  - Monitor icon: System theme
+  - Sun icon: Light mode
+  - Moon icon: Dark mode
+- Theme preference persists across app restarts
+- Respects system theme changes when in "system" mode
 
-**Implementation:**
-- Add `theme` field to AppState ("system" | "light" | "dark")
-- Add theme toggle button component
-- Override system theme when manually selected
-- Save preference to backend persistence
+**Implementation Details:**
 
-**Priority:** MEDIUM (user preference feature)
+**Backend:**
+- Added `Theme` field to AppState struct (persistence.go:16)
+- Added `UpdateTheme(theme string)` method (app.go:341-348)
+- Default theme: "system"
+
+**Frontend:**
+- `ThemeToggle` component with cycling behavior
+- Theme state management in App.tsx
+- Conditional system theme listener (only active in "system" mode)
+- Theme applied via `setDocumentTheme()` utility
+
+**Theme Logic:**
+- System mode: Follows OS preference and watches for changes
+- Light/Dark mode: Overrides system preference with fixed theme
+- Click to cycle: system → light → dark → system
+
+**Priority:** MEDIUM (user preference feature) ✅ COMPLETED
 
 ---
 

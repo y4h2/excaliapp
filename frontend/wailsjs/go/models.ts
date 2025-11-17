@@ -6,6 +6,7 @@ export namespace main {
 	    windowHeight: number;
 	    sidebarWidth: number;
 	    isSidebarCollapsed: boolean;
+	    theme: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new AppState(source);
@@ -18,6 +19,7 @@ export namespace main {
 	        this.windowHeight = source["windowHeight"];
 	        this.sidebarWidth = source["sidebarWidth"];
 	        this.isSidebarCollapsed = source["isSidebarCollapsed"];
+	        this.theme = source["theme"];
 	    }
 	}
 	export class ExcalidrawFile {

@@ -5,9 +5,10 @@ import Canvas from './components/Canvas'
 import StatusBar from './components/StatusBar'
 import MainHeader from './components/MainHeader'
 import KeyboardShortcutsHelp from './components/KeyboardShortcutsHelp'
+import ThemeToggle, { Theme } from './components/ThemeToggle'
 import { NoDirectoryEmptyState, NoFilesEmptyState, NoFileSelectedEmptyState } from './components/EmptyState'
 import { setDocumentTheme, getSystemTheme } from './lib/utils'
-import { UpdateSidebarWidth, UpdateSidebarCollapsed } from '../wailsjs/go/main/App'
+import { UpdateSidebarWidth, UpdateSidebarCollapsed, UpdateTheme } from '../wailsjs/go/main/App'
 import './styles/globals.css'
 
 function AppContent() {
@@ -31,31 +32,38 @@ function AppContent() {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
   const [sidebarWidth, setSidebarWidth] = useState(300)
   const [showKeyboardHelp, setShowKeyboardHelp] = useState(false)
+  const [theme, setTheme] = useState<Theme>('system')
 
-  // Handle system theme changes
+  // Handle theme changes (manual or system)
   useEffect(() => {
-    const handleThemeChange = () => {
-      const theme = getSystemTheme()
-      setDocumentTheme(theme)
+    const applyTheme = () => {
+      if (theme === 'system') {
+        const systemTheme = getSystemTheme()
+        setDocumentTheme(systemTheme)
+      } else {
+        setDocumentTheme(theme)
+      }
     }
 
-    // Set initial theme
-    handleThemeChange()
+    // Apply theme immediately
+    applyTheme()
 
-    // Watch for theme changes
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
-    mediaQuery.addEventListener('change', handleThemeChange)
-
-    return () => {
-      mediaQuery.removeEventListener('change', handleThemeChange)
+    // Watch for system theme changes (only when theme is 'system')
+    if (theme === 'system') {
+      const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
+      mediaQuery.addEventListener('change', applyTheme)
+      return () => mediaQuery.removeEventListener('change', applyTheme)
     }
-  }, [])
+  }, [theme])
 
-  // Restore sidebar state from appState
+  // Restore sidebar state and theme from appState
   useEffect(() => {
     if (appState) {
       setIsSidebarCollapsed(appState.isSidebarCollapsed)
       setSidebarWidth(appState.sidebarWidth)
+      if (appState.theme) {
+        setTheme(appState.theme as Theme)
+      }
     }
   }, [appState])
 
@@ -142,6 +150,17 @@ function AppContent() {
     }
   }, [])
 
+  const handleThemeChange = useCallback(async (newTheme: Theme) => {
+    setTheme(newTheme)
+
+    // Persist to backend
+    try {
+      await UpdateTheme(newTheme)
+    } catch (error) {
+      console.error('Failed to save theme preference:', error)
+    }
+  }, [])
+
   const handleCanvasChange = useCallback((content: string) => {
     updateContent(content)
   }, [updateContent])
@@ -224,7 +243,9 @@ function AppContent() {
           fileCount={files.length}
           currentDirectory={appState?.lastDirectory || null}
           onSave={handleSave}
-        />
+        >
+          <ThemeToggle currentTheme={theme} onThemeChange={handleThemeChange} />
+        </StatusBar>
       </div>
 
       <KeyboardShortcutsHelp

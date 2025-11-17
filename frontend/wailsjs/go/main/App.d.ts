@@ -39,3 +39,5 @@ export function UpdateFileContent(arg1:string):Promise<void>;
 export function UpdateSidebarCollapsed(arg1:boolean):Promise<void>;
 
 export function UpdateSidebarWidth(arg1:number):Promise<void>;
+
+export function UpdateTheme(arg1:string):Promise<void>;

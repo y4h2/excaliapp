@@ -49,6 +49,7 @@ func (a *App) startup(ctx context.Context) {
 			WindowHeight:  768,
 			SidebarWidth:  300,
 			IsSidebarCollapsed: false,
+			Theme:         "system",
 		}
 	}
 	a.appState = appState
@@ -333,6 +334,15 @@ func (a *App) UpdateSidebarCollapsed(isCollapsed bool) error {
 	a.appState.IsSidebarCollapsed = isCollapsed
 	if err := SaveAppState(a.appState); err != nil {
 		return fmt.Errorf("failed to save sidebar state: %w", err)
+	}
+	return nil
+}
+
+// UpdateTheme updates the theme preference and persists it
+func (a *App) UpdateTheme(theme string) error {
+	a.appState.Theme = theme
+	if err := SaveAppState(a.appState); err != nil {
+		return fmt.Errorf("failed to save theme preference: %w", err)
 	}
 	return nil
 }

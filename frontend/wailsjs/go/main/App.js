@@ -77,3 +77,7 @@ export function UpdateSidebarCollapsed(arg1) {
 export function UpdateSidebarWidth(arg1) {
   return window['go']['main']['App']['UpdateSidebarWidth'](arg1);
 }
+
+export function UpdateTheme(arg1) {
+  return window['go']['main']['App']['UpdateTheme'](arg1);
+}
