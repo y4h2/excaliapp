@@ -304,6 +304,21 @@ func (a *App) RenameFile(oldPath string, newName string) (string, error) {
 	return newPath, nil
 }
 
+// DeleteFile deletes a file and closes it if it's currently open
+func (a *App) DeleteFile(path string) error {
+	// If the file is currently open, close it first
+	if a.currentFile == path {
+		a.currentFile = ""
+		a.autoSave.SetCurrentFile("")
+	}
+
+	if err := a.fileManager.DeleteFile(path); err != nil {
+		return fmt.Errorf("failed to delete file: %w", err)
+	}
+
+	return nil
+}
+
 // domReady is called after the frontend has been loaded
 func (a *App) domReady(ctx context.Context) {
 	// Menu manager is now created in startup and getMenu creates it during app creation

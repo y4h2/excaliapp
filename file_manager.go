@@ -276,3 +276,25 @@ func (fm *FileManager) RenameFile(oldPath string, newName string) (string, error
 
 	return newPath, nil
 }
+
+// DeleteFile deletes a file from the file system
+func (fm *FileManager) DeleteFile(path string) error {
+	// Delete the file from the file system
+	if err := os.Remove(path); err != nil {
+		return fmt.Errorf("failed to delete file: %w", err)
+	}
+
+	// Remove the file from the list
+	for i, file := range fm.files {
+		if file.Path == path {
+			fm.files = append(fm.files[:i], fm.files[i+1:]...)
+			break
+		}
+	}
+
+	if fm.onFilesChanged != nil {
+		fm.onFilesChanged(fm.files)
+	}
+
+	return nil
+}

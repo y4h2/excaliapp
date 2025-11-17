@@ -6,6 +6,10 @@ export function CloseCurrentFile() {
   return window['go']['main']['App']['CloseCurrentFile']();
 }
 
+export function DeleteFile(arg1) {
+  return window['go']['main']['App']['DeleteFile'](arg1);
+}
+
 export function Exit() {
   return window['go']['main']['App']['Exit']();
 }

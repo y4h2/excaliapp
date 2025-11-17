@@ -4,6 +4,8 @@ import {main} from '../models';
 
 export function CloseCurrentFile():Promise<void>;
 
+export function DeleteFile(arg1:string):Promise<void>;
+
 export function Exit():Promise<void>;
 
 export function GetAppState():Promise<main.AppState>;

@@ -187,6 +187,7 @@ export interface AppContextType {
   updateContent: (content: string) => void
   setError: (error: string | null) => void
   renameFile: (oldPath: string, newName: string) => Promise<void>
+  deleteFile: (path: string) => Promise<void>
 }
 
 export interface ResizeHandleProps {
@@ -201,6 +202,7 @@ export interface FileListItemProps {
   isActive: boolean
   onClick: () => void
   onRename: (newName: string) => void
+  onDelete: () => void
 }
 
 export interface SidebarProps {

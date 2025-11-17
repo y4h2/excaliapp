@@ -24,7 +24,8 @@ import {
   CloseCurrentFile,
   UpdateFileContent,
   GetFileName,
-  RenameFile
+  RenameFile,
+  DeleteFile
 } from '../../wailsjs/go/main/App'
 
 interface AppStateInternal {
@@ -365,6 +366,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   }
 
+  const deleteFile = async (path: string) => {
+    try {
+      await DeleteFile(path)
+      await loadFiles()
+      // If the deleted file was the current file, clear it
+      if (state.currentFile === path) {
+        dispatch({ type: 'SET_CURRENT_FILE', payload: null })
+        dispatch({ type: 'SET_CURRENT_CONTENT', payload: '' })
+        dispatch({ type: 'SET_DIRTY', payload: false })
+      }
+    } catch (error) {
+      console.error('Failed to delete file:', error)
+      dispatch({ type: 'SET_ERROR', payload: 'Failed to delete file' })
+      throw error
+    }
+  }
+
   const contextValue: AppContextType = {
     files: state.files,
     currentFile: state.currentFile,
@@ -383,6 +401,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     updateContent,
     setError,
     renameFile,
+    deleteFile,
     currentDirectory: state.appState?.lastDirectory || null
   }
 

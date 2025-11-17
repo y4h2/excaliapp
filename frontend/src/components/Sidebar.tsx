@@ -9,12 +9,14 @@ interface FileListItemProps {
   isActive: boolean
   onClick: () => void
   onRename: (newName: string) => void
+  onDelete: () => void
 }
 
-const FileListItem: React.FC<FileListItemProps> = ({ file, isActive, onClick, onRename }) => {
+const FileListItem: React.FC<FileListItemProps> = ({ file, isActive, onClick, onRename, onDelete }) => {
   const [isEditing, setIsEditing] = useState(false)
   const [editName, setEditName] = useState('')
   const [showContextMenu, setShowContextMenu] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [contextMenuPos, setContextMenuPos] = useState({ x: 0, y: 0 })
   const inputRef = useRef<HTMLInputElement>(null)
   const menuRef = useRef<HTMLDivElement>(null)
@@ -31,6 +33,20 @@ const FileListItem: React.FC<FileListItemProps> = ({ file, isActive, onClick, on
     setEditName(nameWithoutExt)
     setIsEditing(true)
     setShowContextMenu(false)
+  }
+
+  const handleDelete = () => {
+    setShowContextMenu(false)
+    setShowDeleteConfirm(true)
+  }
+
+  const handleConfirmDelete = () => {
+    setShowDeleteConfirm(false)
+    onDelete()
+  }
+
+  const handleCancelDelete = () => {
+    setShowDeleteConfirm(false)
   }
 
   const handleSave = () => {
@@ -127,18 +143,56 @@ const FileListItem: React.FC<FileListItemProps> = ({ file, isActive, onClick, on
       {showContextMenu && (
         <div
           ref={menuRef}
-          className="fixed bg-popover border border-border rounded-md shadow-lg py-1 z-50"
+          className="fixed bg-popover border border-border rounded-md shadow-lg py-1 z-50 min-w-32"
           style={{
             left: `${contextMenuPos.x}px`,
             top: `${contextMenuPos.y}px`,
           }}
         >
           <button
-            className="w-full text-left px-4 py-2 text-sm hover:bg-accent flex items-center space-x-2"
+            className="w-full text-left px-4 py-2 text-sm hover:bg-accent transition-colors"
             onClick={handleStartRename}
           >
             <span>Rename</span>
           </button>
+          <div className="border-t border-border my-1"></div>
+          <button
+            className="w-full text-left px-4 py-2 text-sm hover:bg-accent hover:text-destructive transition-colors"
+            onClick={handleDelete}
+          >
+            <span>Delete</span>
+          </button>
+        </div>
+      )}
+
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={handleCancelDelete}>
+          <div
+            className="bg-popover border border-border rounded-lg shadow-xl p-6 max-w-md mx-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-lg font-semibold mb-2">Delete File?</h3>
+            <p className="text-sm text-muted-foreground mb-4">
+              Are you sure you want to delete <span className="font-medium text-foreground">"{file.name}"</span>?
+              <br />
+              <br />
+              This action cannot be undone.
+            </p>
+            <div className="flex justify-end space-x-2">
+              <button
+                onClick={handleCancelDelete}
+                className="btn btn-ghost btn-sm"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmDelete}
+                className="btn btn-sm bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </>
@@ -199,7 +253,7 @@ interface SidebarProps {
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggle, width, onResize }) => {
-  const { files, currentFile, loadFile, openDirectory, newFile, currentDirectory, renameFile } = useApp()
+  const { files, currentFile, loadFile, openDirectory, newFile, currentDirectory, renameFile, deleteFile } = useApp()
 
   const handleFileClick = useCallback((file: ExcalidrawFile) => {
     loadFile(file.path)
@@ -216,6 +270,10 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggle, width, onResiz
   const handleRename = useCallback((filePath: string, newName: string) => {
     renameFile(filePath, newName)
   }, [renameFile])
+
+  const handleDelete = useCallback((filePath: string) => {
+    deleteFile(filePath)
+  }, [deleteFile])
 
   if (isCollapsed) {
     return (
@@ -305,6 +363,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggle, width, onResiz
                 isActive={currentFile === file.path}
                 onClick={() => handleFileClick(file)}
                 onRename={(newName) => handleRename(file.path, newName)}
+                onDelete={() => handleDelete(file.path)}
               />
             ))}
           </div>
