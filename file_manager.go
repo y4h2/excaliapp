@@ -211,3 +211,68 @@ func (fm *FileManager) SetFileChanged(path string, hasChanges bool) {
 func (fm *FileManager) OnFilesChanged(callback func([]ExcalidrawFile)) {
 	fm.onFilesChanged = callback
 }
+
+// GenerateUntitledName generates a unique untitled filename
+func (fm *FileManager) GenerateUntitledName() string {
+	baseName := "untitled"
+	extension := ".excalidraw"
+
+	// Check if "untitled.excalidraw" exists
+	untitledPath := filepath.Join(fm.currentDirectory, baseName+extension)
+	if _, err := os.Stat(untitledPath); os.IsNotExist(err) {
+		return baseName + extension
+	}
+
+	// Find the next available number
+	counter := 1
+	for {
+		name := fmt.Sprintf("%s-%d%s", baseName, counter, extension)
+		path := filepath.Join(fm.currentDirectory, name)
+		if _, err := os.Stat(path); os.IsNotExist(err) {
+			return name
+		}
+		counter++
+	}
+}
+
+// RenameFile renames a file and returns the new path
+func (fm *FileManager) RenameFile(oldPath string, newName string) (string, error) {
+	if !strings.HasSuffix(newName, ".excalidraw") {
+		newName += ".excalidraw"
+	}
+
+	newPath := filepath.Join(filepath.Dir(oldPath), newName)
+
+	// Check if the new path already exists
+	if oldPath != newPath {
+		if _, err := os.Stat(newPath); err == nil {
+			return "", fmt.Errorf("file already exists: %s", newName)
+		}
+	}
+
+	// Rename the file
+	if err := os.Rename(oldPath, newPath); err != nil {
+		return "", fmt.Errorf("failed to rename file: %w", err)
+	}
+
+	// Update the file in the list
+	for i, file := range fm.files {
+		if file.Path == oldPath {
+			fm.files[i].Name = newName
+			fm.files[i].Path = newPath
+			fm.files[i].IsNew = false
+			break
+		}
+	}
+
+	// Re-sort files
+	sort.Slice(fm.files, func(i, j int) bool {
+		return strings.ToLower(fm.files[i].Name) < strings.ToLower(fm.files[j].Name)
+	})
+
+	if fm.onFilesChanged != nil {
+		fm.onFilesChanged(fm.files)
+	}
+
+	return newPath, nil
+}

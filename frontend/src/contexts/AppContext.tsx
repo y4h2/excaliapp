@@ -23,7 +23,8 @@ import {
   SaveCurrentFile,
   CloseCurrentFile,
   UpdateFileContent,
-  GetFileName
+  GetFileName,
+  RenameFile
 } from '../../wailsjs/go/main/App'
 
 interface AppStateInternal {
@@ -349,6 +350,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     dispatch({ type: 'SET_ERROR', payload: error })
   }
 
+  const renameFile = async (oldPath: string, newName: string) => {
+    try {
+      await RenameFile(oldPath, newName)
+      await loadFiles()
+      // If the renamed file was the current file, reload it
+      if (state.currentFile === oldPath) {
+        const currentDir = state.appState?.lastDirectory || ''
+        const newPath = `${currentDir}/${newName}${newName.endsWith('.excalidraw') ? '' : '.excalidraw'}`
+        dispatch({ type: 'SET_CURRENT_FILE', payload: newPath })
+      }
+    } catch (error) {
+      console.error('Failed to rename file:', error)
+      dispatch({ type: 'SET_ERROR', payload: 'Failed to rename file' })
+      throw error
+    }
+  }
+
   const contextValue: AppContextType = {
     files: state.files,
     currentFile: state.currentFile,
@@ -366,6 +384,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     closeFile,
     updateContent,
     setError,
+    renameFile,
     currentDirectory: state.appState?.lastDirectory || null
   }
 

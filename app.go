@@ -170,27 +170,14 @@ func (a *App) SaveFile(content string) error {
 	return a.autoSave.ForceSave()
 }
 
-// NewFileDialog creates a new Excalidraw file
+// NewFileDialog creates a new Excalidraw file with an untitled name
 func (a *App) NewFileDialog() error {
 	if a.fileManager.GetCurrentDirectory() == "" {
 		return fmt.Errorf("no directory selected")
 	}
 
-	// Use a simple input dialog for now
-	name, err := runtime.MessageDialog(a.ctx, runtime.MessageDialogOptions{
-		Type:        runtime.QuestionDialog,
-		Title:       "New Excalidraw File",
-		Message:     "Enter file name:",
-		Buttons:     []string{"Create", "Cancel"},
-		DefaultButton: "Create",
-	})
-
-	if err != nil || name == "Cancel" {
-		return nil
-	}
-
-	// For now, use a default name
-	fileName := "untitled.excalidraw"
+	// Generate a unique untitled filename
+	fileName := a.fileManager.GenerateUntitledName()
 	path, err := a.fileManager.CreateNewFile(fileName)
 	if err != nil {
 		return fmt.Errorf("failed to create new file: %w", err)
@@ -298,6 +285,22 @@ func (a *App) GetFileName() string {
 		return ""
 	}
 	return filepath.Base(a.currentFile)
+}
+
+// RenameFile renames a file and updates the current file if it matches
+func (a *App) RenameFile(oldPath string, newName string) error {
+	newPath, err := a.fileManager.RenameFile(oldPath, newName)
+	if err != nil {
+		return fmt.Errorf("failed to rename file: %w", err)
+	}
+
+	// If the renamed file is currently open, update the current file path
+	if a.currentFile == oldPath {
+		a.currentFile = newPath
+		a.autoSave.SetCurrentFile(newPath)
+	}
+
+	return nil
 }
 
 // domReady is called after the frontend has been loaded

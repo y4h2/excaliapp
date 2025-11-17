@@ -186,6 +186,7 @@ export interface AppContextType {
   closeFile: () => Promise<void>
   updateContent: (content: string) => void
   setError: (error: string | null) => void
+  renameFile: (oldPath: string, newName: string) => Promise<void>
 }
 
 export interface ResizeHandleProps {
@@ -199,7 +200,7 @@ export interface FileListItemProps {
   file: ExcalidrawFile
   isActive: boolean
   onClick: () => void
-  onDoubleClick: () => void
+  onRename: (newName: string) => void
 }
 
 export interface SidebarProps {

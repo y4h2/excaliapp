@@ -26,6 +26,8 @@ export function NewFileDialog():Promise<void>;
 
 export function OpenDirectoryDialog():Promise<void>;
 
+export function RenameFile(arg1:string,arg2:string):Promise<void>;
+
 export function SaveCurrentFile():Promise<void>;
 
 export function SaveFile(arg1:string):Promise<void>;

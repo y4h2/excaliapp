@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from 'react'
+import React, { useState, useRef, useCallback, useEffect } from 'react'
 import { Menu, Plus, FolderOpen, PanelLeft, PanelRight, FileText, Circle } from 'lucide-react'
 import { cn, formatDate } from '../lib/utils'
 import { ExcalidrawFile } from '../types'
@@ -8,10 +8,77 @@ interface FileListItemProps {
   file: ExcalidrawFile
   isActive: boolean
   onClick: () => void
-  onDoubleClick: () => void
+  onRename: (newName: string) => void
 }
 
-const FileListItem: React.FC<FileListItemProps> = ({ file, isActive, onClick, onDoubleClick }) => {
+const FileListItem: React.FC<FileListItemProps> = ({ file, isActive, onClick, onRename }) => {
+  const [isEditing, setIsEditing] = useState(false)
+  const [editName, setEditName] = useState('')
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  const handleDoubleClick = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    const nameWithoutExt = file.name.replace('.excalidraw', '')
+    setEditName(nameWithoutExt)
+    setIsEditing(true)
+  }
+
+  const handleSave = () => {
+    if (editName.trim() && editName !== file.name.replace('.excalidraw', '')) {
+      onRename(editName.trim())
+    }
+    setIsEditing(false)
+  }
+
+  const handleCancel = () => {
+    setIsEditing(false)
+    setEditName('')
+  }
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleSave()
+    } else if (e.key === 'Escape') {
+      handleCancel()
+    }
+  }
+
+  const handleBlur = () => {
+    handleSave()
+  }
+
+  useEffect(() => {
+    if (isEditing && inputRef.current) {
+      inputRef.current.focus()
+      inputRef.current.select()
+    }
+  }, [isEditing])
+
+  if (isEditing) {
+    return (
+      <div
+        className={cn(
+          "file-item",
+          isActive && "active"
+        )}
+      >
+        <div className="flex items-center min-w-0 flex-1">
+          <FileText className="icon mr-2 flex-shrink-0" />
+          <input
+            ref={inputRef}
+            type="text"
+            value={editName}
+            onChange={(e) => setEditName(e.target.value)}
+            onKeyDown={handleKeyDown}
+            onBlur={handleBlur}
+            className="flex-1 bg-transparent border border-primary rounded px-1 py-0.5 text-sm font-medium outline-none"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div
       className={cn(
@@ -20,8 +87,8 @@ const FileListItem: React.FC<FileListItemProps> = ({ file, isActive, onClick, on
         file.hasChanges && "has-changes"
       )}
       onClick={onClick}
-      onDoubleClick={onDoubleClick}
-      title={`${file.name}${file.hasChanges ? ' (modified)' : ''}`}
+      onDoubleClick={handleDoubleClick}
+      title={`${file.name}${file.hasChanges ? ' (modified)' : ''}\nDouble-click to rename`}
     >
       <div className="flex items-center min-w-0">
         <FileText className="icon mr-2 flex-shrink-0" />
@@ -89,7 +156,7 @@ interface SidebarProps {
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggle, width, onResize }) => {
-  const { files, currentFile, loadFile, openDirectory, newFile, currentDirectory } = useApp()
+  const { files, currentFile, loadFile, openDirectory, newFile, currentDirectory, renameFile } = useApp()
 
   const handleFileClick = useCallback((file: ExcalidrawFile) => {
     loadFile(file.path)
@@ -102,6 +169,10 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggle, width, onResiz
   const handleOpenDirectory = useCallback(() => {
     openDirectory()
   }, [openDirectory])
+
+  const handleRename = useCallback((filePath: string, newName: string) => {
+    renameFile(filePath, newName)
+  }, [renameFile])
 
   if (isCollapsed) {
     return (
@@ -190,7 +261,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggle, width, onResiz
                 file={file}
                 isActive={currentFile === file.path}
                 onClick={() => handleFileClick(file)}
-                onDoubleClick={() => handleFileClick(file)}
+                onRename={(newName) => handleRename(file.path, newName)}
               />
             ))}
           </div>
